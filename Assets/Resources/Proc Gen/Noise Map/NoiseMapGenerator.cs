@@ -10,22 +10,25 @@ public class NoiseMapGenerator : MonoBehaviour
     private int mapSizeY;
     public int[,] grid;
 
-    private CellularAutomata applyCA;
+    private GenerateMap genMap;
     [SerializeField] private int iterations = 6;
+
+    [SerializeField] private int minMapBoundaries = 50;
+    [SerializeField] private int maxMapBoundaries = 50;
 
 
     private void Start()
     {
-        applyCA = GetComponent<CellularAutomata>();
+        genMap = GetComponent<GenerateMap>();
         GenerateNoiseGrid();
-        applyCA.ApplyCellularAutomata(grid, iterations, mapSizeX, mapSizeY);
+        genMap.GenerateDungeon(grid, iterations, mapSizeX, mapSizeY);
     }
 
     private void GenerateNoiseGrid()
     {
         //Randomly select grid size
-        mapSizeX = Random.Range(80, 140);
-        mapSizeY = Random.Range(80, 140);
+        mapSizeX = Random.Range(minMapBoundaries, maxMapBoundaries);
+        mapSizeY = Random.Range(minMapBoundaries, maxMapBoundaries);
 
         grid = new int[mapSizeX, mapSizeY];
 

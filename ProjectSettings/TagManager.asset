@@ -8,6 +8,9 @@ TagManager:
   - Timer
   - gm
   - DataManager
+  - Exit
+  - FloorUI
+  - ScoreUI
   layers:
   - Default
   - TransparentFX

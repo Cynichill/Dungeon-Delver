@@ -6,13 +6,13 @@ using UnityEngine.SceneManagement;
 public class GameManager : MonoBehaviour, IDataPersistence
 {
     public int floorCount = 0;
-    private int floorHighScore = 0;
+    public int floorHighScore = 0;
     private static GameObject instance;
     public float saveTime = 30f;
     private DataPersistenceManager dataManager;
 
     //Don't destroy this object on load, makes sure duplicates do not appear by deleting them if the object already exists elsewhere
-    void Start()
+    private void Start()
     {
         DontDestroyOnLoad(gameObject);
         if (instance == null)
