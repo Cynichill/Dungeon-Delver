@@ -8,11 +8,9 @@ public class GenerateMap : MonoBehaviour
 
     //Debug & Showcase variables
 
-    public bool useCA = false;
-    public bool useFloodFill = false;
-    public bool connectRooms = false;
-    public bool placeObjects = false;
-
+    //Control
+    public PlayerControl controls;
+    public bool debugControl;
     private int mapSizeX = 0;
     private int mapSizeY = 0;
     [SerializeField] private GameObject floorPrefab;
@@ -26,6 +24,21 @@ public class GenerateMap : MonoBehaviour
 
     private Transform player;
     private Transform exit;
+    private List<Island> leftoverIslands = new List<Island>();
+
+    private void Awake()
+    {
+        controls = new PlayerControl();
+        if (debugControl)
+        {
+            controls.Debug.CAIteration.performed += ctx => ApplyCellularAutomata(tempGrid, 1);
+            controls.Debug.Floodfill.performed += ctx => FloodFill();
+            controls.Debug.ConnectIslands.performed += ctx => ConnectAllIslands();
+            controls.Debug.PlaceObjects.performed += ctx => PlaceObjects(leftoverIslands.First());
+            controls.Debug.SpawnGrid.performed += ctx => SpawnGrid(tempGrid);
+            controls.Debug.DestroyChildren.performed += ctx => DestroyChildren();
+        }
+    }
 
     private void Start()
     {
@@ -85,15 +98,15 @@ public class GenerateMap : MonoBehaviour
         mapSizeX = mapSizeXParam;
         mapSizeY = mapSizeYParam;
         tempGrid = grid; //On first iteration, tempgrid is noise map, on further it's the next iteration
-        if (useCA)
+
+        if (!debugControl)
         {
             ApplyCellularAutomata(grid, count); //Apply CA to noise map
+            FloodFill(); //Use floodfill to fill and remove areas of the map
+            ConnectAllIslands(); //Connect all islands 
+            PlaceObjects(leftoverIslands.First());//This will be the final map, place player and exit somewhere
+            SpawnGrid(tempGrid); //Spawn dungeon
         }
-        if (useFloodFill)
-        {
-            FloodFillAndConnect(); //Use floodfill to fill and remove areas of the map, then connect areas of the map together
-        }
-        SpawnGrid(tempGrid); //Spawn dungeon
     }
 
     private void ApplyCellularAutomata(int[,] grid, int count)
@@ -226,7 +239,7 @@ public class GenerateMap : MonoBehaviour
         return tiles;
     }
 
-    private void FloodFillAndConnect()
+    private void FloodFill()
     {
         List<List<TileCoordinate>> wallRegions = GetTileRegions(1); //Find all tiles that are walls
         foreach (List<TileCoordinate> wallRegion in wallRegions)
@@ -239,8 +252,6 @@ public class GenerateMap : MonoBehaviour
                 }
             }
         }
-
-        List<Island> leftoverIslands = new List<Island>();
 
         List<List<TileCoordinate>> floorRegions = GetTileRegions(0); //Find all tiles that are floors
         foreach (List<TileCoordinate> floorRegion in floorRegions)
@@ -258,29 +269,23 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
-        if (connectRooms)
+    }
+
+    private void ConnectAllIslands()
+    {
+        while (leftoverIslands.Count > 1) //Connect seperated Islands until there is only one big connected Island
         {
-            while (leftoverIslands.Count > 1) //Connect seperated Islands until there is only one big connected Island
+
+            ConnectIslands(leftoverIslands);
+            leftoverIslands.Clear(); //Clear list
+
+            List<List<TileCoordinate>> newFloorRegions = GetTileRegions(0); //Find all seperated Islands
+
+            foreach (List<TileCoordinate> floorRegion in newFloorRegions)
             {
-
-                ConnectIslands(leftoverIslands);
-                leftoverIslands.Clear(); //Clear list
-
-                List<List<TileCoordinate>> newFloorRegions = GetTileRegions(0); //Find all seperated Islands
-
-                foreach (List<TileCoordinate> floorRegion in newFloorRegions)
-                {
-                    leftoverIslands.Add(new Island(floorRegion, tempGrid)); //Get new list of leftover Islands
-                }
+                leftoverIslands.Add(new Island(floorRegion, tempGrid)); //Get new list of leftover Islands
             }
         }
-
-        if (placeObjects)
-        {
-            //This will be the final map, place player and exit somewhere
-            PlaceObjects(leftoverIslands.First());
-        }
-
     }
 
     private void ConnectIslands(List<Island> leftoverIslands)
@@ -333,7 +338,7 @@ public class GenerateMap : MonoBehaviour
 
     private void CreatePassage(Island Island1, Island Island2, TileCoordinate tile1, TileCoordinate tile2)
     {
-        //Debug.DrawLine(CoordToWorldPoint(tile1), CoordToWorldPoint(tile2), Color.green, 100);
+        Debug.DrawLine(CoordToWorldPoint(tile1), CoordToWorldPoint(tile2), Color.green, 100);
         List<TileCoordinate> line = PassageLine(tile1, tile2); //Get line from point 1 to point 1
 
         //Turn line into passageway
@@ -519,5 +524,23 @@ public class GenerateMap : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void DestroyChildren()
+    {
+        foreach (Transform child in transform)
+        {
+            GameObject.Destroy(child.gameObject);
+        }
+    }
+
+    private void OnEnable()
+    {
+        controls.Enable();
+    }
+
+    private void OnDisable()
+    {
+        controls.Disable();
     }
 }

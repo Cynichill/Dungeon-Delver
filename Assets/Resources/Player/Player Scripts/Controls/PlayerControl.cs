@@ -707,6 +707,134 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Debug"",
+            ""id"": ""93dfd368-10d3-4166-9b95-c1632f327f5f"",
+            ""actions"": [
+                {
+                    ""name"": ""CA Iteration"",
+                    ""type"": ""Button"",
+                    ""id"": ""7e0b50dc-f1e4-4ff7-8112-71d48721c9bf"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Floodfill"",
+                    ""type"": ""Button"",
+                    ""id"": ""45ec49ea-4e26-4608-bab6-a33cb781652a"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Connect Islands"",
+                    ""type"": ""Button"",
+                    ""id"": ""447f7dc9-6874-4d2f-9030-5e86b115f921"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Place Objects"",
+                    ""type"": ""Button"",
+                    ""id"": ""3049b8c0-dc7b-43bf-b583-9824f2279009"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Spawn Grid"",
+                    ""type"": ""Button"",
+                    ""id"": ""fe73d05f-f53f-4ece-abd8-defc9c01588c"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""DestroyChildren"",
+                    ""type"": ""Button"",
+                    ""id"": ""a84ba42f-1277-4d4c-9436-c6a109691f97"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""5b821a14-cbb3-49f9-982c-ec99840fa13a"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""CA Iteration"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b328b2a0-8e22-49d9-ad99-8b50731f6111"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Floodfill"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""eb52b94b-0336-45e8-8565-97878a21fe3b"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Connect Islands"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""57b34d25-2e06-449d-b3f0-862cde1c1bde"",
+                    ""path"": ""<Keyboard>/4"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Place Objects"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c722332e-34b5-451f-818a-9190ecef22e8"",
+                    ""path"": ""<Keyboard>/5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Spawn Grid"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1971d5fc-b4fd-4923-9e9e-614687dc50c9"",
+                    ""path"": ""<Keyboard>/6"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""DestroyChildren"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": [
@@ -788,6 +916,14 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
         m_UI_RightClick = m_UI.FindAction("RightClick", throwIfNotFound: true);
         m_UI_TrackedDevicePosition = m_UI.FindAction("TrackedDevicePosition", throwIfNotFound: true);
         m_UI_TrackedDeviceOrientation = m_UI.FindAction("TrackedDeviceOrientation", throwIfNotFound: true);
+        // Debug
+        m_Debug = asset.FindActionMap("Debug", throwIfNotFound: true);
+        m_Debug_CAIteration = m_Debug.FindAction("CA Iteration", throwIfNotFound: true);
+        m_Debug_Floodfill = m_Debug.FindAction("Floodfill", throwIfNotFound: true);
+        m_Debug_ConnectIslands = m_Debug.FindAction("Connect Islands", throwIfNotFound: true);
+        m_Debug_PlaceObjects = m_Debug.FindAction("Place Objects", throwIfNotFound: true);
+        m_Debug_SpawnGrid = m_Debug.FindAction("Spawn Grid", throwIfNotFound: true);
+        m_Debug_DestroyChildren = m_Debug.FindAction("DestroyChildren", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -989,6 +1125,79 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
         }
     }
     public UIActions @UI => new UIActions(this);
+
+    // Debug
+    private readonly InputActionMap m_Debug;
+    private IDebugActions m_DebugActionsCallbackInterface;
+    private readonly InputAction m_Debug_CAIteration;
+    private readonly InputAction m_Debug_Floodfill;
+    private readonly InputAction m_Debug_ConnectIslands;
+    private readonly InputAction m_Debug_PlaceObjects;
+    private readonly InputAction m_Debug_SpawnGrid;
+    private readonly InputAction m_Debug_DestroyChildren;
+    public struct DebugActions
+    {
+        private @PlayerControl m_Wrapper;
+        public DebugActions(@PlayerControl wrapper) { m_Wrapper = wrapper; }
+        public InputAction @CAIteration => m_Wrapper.m_Debug_CAIteration;
+        public InputAction @Floodfill => m_Wrapper.m_Debug_Floodfill;
+        public InputAction @ConnectIslands => m_Wrapper.m_Debug_ConnectIslands;
+        public InputAction @PlaceObjects => m_Wrapper.m_Debug_PlaceObjects;
+        public InputAction @SpawnGrid => m_Wrapper.m_Debug_SpawnGrid;
+        public InputAction @DestroyChildren => m_Wrapper.m_Debug_DestroyChildren;
+        public InputActionMap Get() { return m_Wrapper.m_Debug; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(DebugActions set) { return set.Get(); }
+        public void SetCallbacks(IDebugActions instance)
+        {
+            if (m_Wrapper.m_DebugActionsCallbackInterface != null)
+            {
+                @CAIteration.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnCAIteration;
+                @CAIteration.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnCAIteration;
+                @CAIteration.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnCAIteration;
+                @Floodfill.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnFloodfill;
+                @Floodfill.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnFloodfill;
+                @Floodfill.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnFloodfill;
+                @ConnectIslands.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnConnectIslands;
+                @ConnectIslands.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnConnectIslands;
+                @ConnectIslands.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnConnectIslands;
+                @PlaceObjects.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnPlaceObjects;
+                @PlaceObjects.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnPlaceObjects;
+                @PlaceObjects.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnPlaceObjects;
+                @SpawnGrid.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnSpawnGrid;
+                @SpawnGrid.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnSpawnGrid;
+                @SpawnGrid.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnSpawnGrid;
+                @DestroyChildren.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnDestroyChildren;
+                @DestroyChildren.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnDestroyChildren;
+                @DestroyChildren.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnDestroyChildren;
+            }
+            m_Wrapper.m_DebugActionsCallbackInterface = instance;
+            if (instance != null)
+            {
+                @CAIteration.started += instance.OnCAIteration;
+                @CAIteration.performed += instance.OnCAIteration;
+                @CAIteration.canceled += instance.OnCAIteration;
+                @Floodfill.started += instance.OnFloodfill;
+                @Floodfill.performed += instance.OnFloodfill;
+                @Floodfill.canceled += instance.OnFloodfill;
+                @ConnectIslands.started += instance.OnConnectIslands;
+                @ConnectIslands.performed += instance.OnConnectIslands;
+                @ConnectIslands.canceled += instance.OnConnectIslands;
+                @PlaceObjects.started += instance.OnPlaceObjects;
+                @PlaceObjects.performed += instance.OnPlaceObjects;
+                @PlaceObjects.canceled += instance.OnPlaceObjects;
+                @SpawnGrid.started += instance.OnSpawnGrid;
+                @SpawnGrid.performed += instance.OnSpawnGrid;
+                @SpawnGrid.canceled += instance.OnSpawnGrid;
+                @DestroyChildren.started += instance.OnDestroyChildren;
+                @DestroyChildren.performed += instance.OnDestroyChildren;
+                @DestroyChildren.canceled += instance.OnDestroyChildren;
+            }
+        }
+    }
+    public DebugActions @Debug => new DebugActions(this);
     private int m_KeyboardMouseSchemeIndex = -1;
     public InputControlScheme KeyboardMouseScheme
     {
@@ -1051,5 +1260,14 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
         void OnRightClick(InputAction.CallbackContext context);
         void OnTrackedDevicePosition(InputAction.CallbackContext context);
         void OnTrackedDeviceOrientation(InputAction.CallbackContext context);
+    }
+    public interface IDebugActions
+    {
+        void OnCAIteration(InputAction.CallbackContext context);
+        void OnFloodfill(InputAction.CallbackContext context);
+        void OnConnectIslands(InputAction.CallbackContext context);
+        void OnPlaceObjects(InputAction.CallbackContext context);
+        void OnSpawnGrid(InputAction.CallbackContext context);
+        void OnDestroyChildren(InputAction.CallbackContext context);
     }
 }
