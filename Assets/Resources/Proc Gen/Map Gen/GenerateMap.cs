@@ -11,20 +11,28 @@ public class GenerateMap : MonoBehaviour
     //Control
     public PlayerControl controls;
     public bool debugControl;
+
+    //Map Size
     private int mapSizeX = 0;
     private int mapSizeY = 0;
+
+    //Prefabs
     [SerializeField] private GameObject floorPrefab;
     [SerializeField] private GameObject wallPrefab;
+    [SerializeField] private GameObject timerPrefab;
+    private Transform objectParent;
+
+    //Generation Rules
     [SerializeField] private int wallThresholdSize = 50;
     [SerializeField] private int floorThresholdSize = 50;
     [SerializeField] private int passagewayRadius = 1;
     private int[,] tempGrid;
-
     private List<int> usedSpots = new List<int>();
-
+    private List<int> usedWorstSpots = new List<int>();
     private Transform player;
     private Transform exit;
     private List<Island> leftoverIslands = new List<Island>();
+    private List<TileCoordinate> worstTiles = new List<TileCoordinate>();
 
     private void Awake()
     {
@@ -44,6 +52,7 @@ public class GenerateMap : MonoBehaviour
     {
         player = GameObject.FindGameObjectWithTag("Player").transform;
         exit = GameObject.FindGameObjectWithTag("Exit").transform;
+        objectParent = GameObject.FindGameObjectWithTag("ObjParent").transform;
     }
 
     struct TileCoordinate
@@ -292,8 +301,11 @@ public class GenerateMap : MonoBehaviour
     {
 
         int closestDistance = 0;
+        int longestDistance = 999;
         TileCoordinate bestTile1 = new TileCoordinate();
         TileCoordinate bestTile2 = new TileCoordinate();
+        TileCoordinate worstTile1 = new TileCoordinate();
+        TileCoordinate worstTile2 = new TileCoordinate();
         Island bestIsland1 = new Island();
         Island bestIsland2 = new Island();
         bool connectionFound = false;
@@ -316,6 +328,12 @@ public class GenerateMap : MonoBehaviour
                     {
                         int distanceBetweenTiles = (int)(Mathf.Pow(Island1.edgeTiles[tiles1].xCoord - Island2.edgeTiles[tiles2].xCoord, 2) + Mathf.Pow(Island1.edgeTiles[tiles1].yCoord - Island2.edgeTiles[tiles2].yCoord, 2)); //Find distance between tiles
 
+                        if (distanceBetweenTiles > longestDistance || !connectionFound)
+                        {
+                            worstTile1 = Island1.edgeTiles[tiles1];
+                            worstTile2 = Island2.edgeTiles[tiles2];
+                        }
+
                         if (distanceBetweenTiles < closestDistance || !connectionFound) //Use for loop to find closest Island and closest tile for each Island
                         {
                             closestDistance = distanceBetweenTiles;
@@ -331,6 +349,14 @@ public class GenerateMap : MonoBehaviour
 
             if (connectionFound)
             {
+                if (!worstTiles.Contains(worstTile1))
+                {
+                    worstTiles.Add(worstTile1);
+                }
+                if (!worstTiles.Contains(worstTile2))
+                {
+                    worstTiles.Add(worstTile2);
+                }
                 CreatePassage(bestIsland1, bestIsland2, bestTile1, bestTile2);
             }
         }
@@ -462,43 +488,115 @@ public class GenerateMap : MonoBehaviour
 
     private void PlaceObjects(Island viableTiles)
     {
-        int playerSpawn = AllocateSpot(viableTiles);
+        int playerSpawn = AllocateSpot(viableTiles, false);
         //Place player on random viable tile
         player.transform.position = new Vector3(viableTiles.tiles[playerSpawn].xCoord, viableTiles.tiles[playerSpawn].yCoord, 0);
 
-        int exitSpawn = AllocateSpot(viableTiles);
+        int exitSpawn = AllocateSpot(viableTiles, false);
         //Place exit on random viable tile
         exit.transform.position = new Vector3(viableTiles.tiles[exitSpawn].xCoord, viableTiles.tiles[exitSpawn].yCoord, 0);
+
+        int maxCollectables = (mapSizeX + mapSizeY) / 40; //Max is 200 size, so max 5 collectables
+
+        for (int i = 0; i < maxCollectables; i++)
+        {
+            int collectable = AllocateSpot(viableTiles, true);
+            if (collectable != 99999)
+            {
+                var collect = Instantiate(timerPrefab, new Vector3(worstTiles[collectable].xCoord, worstTiles[collectable].yCoord, 0), Quaternion.identity);
+                collect.transform.parent = objectParent.transform;
+            }
+        }
 
         //IF SYSTEM HAS MORE OBJECTS TO PLACE THAN VIABLE TILES, ALLOCATESPOT WILL CAUSE INFINITE LOOP
     }
 
-    private int AllocateSpot(Island viableTiles)
+    private int AllocateSpot(Island viableTiles, bool collectable)
     {
         //Get random seed
         System.Random randomSeed = new System.Random(Time.time.ToString().GetHashCode());
 
-        //Get random element from viable tiles
-        int randomSpot = randomSeed.Next(viableTiles.tiles.Count);
+        int randomSpot;
+        int limit;
+        int limitBreak = 0;
 
-        while (CheckSpot(randomSpot))
+        if (!collectable)
         {
-            //Generate new number if spot already taken
+            //Get random element from viable tiles
             randomSpot = randomSeed.Next(viableTiles.tiles.Count);
+
+            limit = viableTiles.tiles.Count;
+
+            while (CheckSpot(randomSpot, collectable))
+            {
+                //Generate new number if spot already taken
+                randomSpot = randomSeed.Next(viableTiles.tiles.Count);
+                limitBreak++;
+
+                if (limitBreak == limit)
+                {
+                    Debug.Log("All spots used! (Uh oh!)");
+                    return 99999;
+                }
+            }
+
+            usedSpots.Add(randomSpot);
+
+        }
+        else
+        {
+            if (worstTiles.Count > 0)
+            {
+                //Get random element from viable tiles
+                randomSpot = randomSeed.Next(worstTiles.Count);
+
+                limit = worstTiles.Count;
+
+                while (CheckSpot(randomSpot, collectable))
+                {
+                    //Generate new number if spot already taken
+                    randomSpot = randomSeed.Next(worstTiles.Count);
+                    limitBreak++;
+
+                    if (limitBreak == limit)
+                    {
+                        Debug.Log("All spots used! (Collectable Limit Reached!)");
+                        return 99999;
+                    }
+                }
+
+                usedWorstSpots.Add(randomSpot);
+            }
+            else
+            {
+                return 99999;
+            }
         }
 
-        usedSpots.Add(randomSpot);
-
         return randomSpot;
+
     }
 
-    private bool CheckSpot(int randomSpot)
+    private bool CheckSpot(int randomSpot, bool collectable)
     {
-        foreach (int spot in usedSpots)
+        if (!collectable)
         {
-            if (randomSpot == spot)
+            foreach (int spot in usedSpots)
             {
-                return true;
+                if (randomSpot == spot)
+                {
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            foreach (int spot in usedWorstSpots)
+            {
+                if (randomSpot == spot)
+                {
+                    return true;
+                }
             }
         }
 

@@ -242,7 +242,7 @@ GameObject:
   - component: {fileID: 895209654}
   m_Layer: 0
   m_Name: Objects
-  m_TagString: Untagged
+  m_TagString: ObjParent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -869,6 +869,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: GridSpawner
       objectReference: {fileID: 0}
+    - target: {fileID: 1354803356338082742, guid: bf35a5a937978a0498faae3b96c5a494, type: 3}
+      propertyPath: density
+      value: 52
+      objectReference: {fileID: 0}
     - target: {fileID: 1354803356338082743, guid: bf35a5a937978a0498faae3b96c5a494, type: 3}
       propertyPath: useCA
       value: 1
@@ -877,6 +881,10 @@ PrefabInstance:
       propertyPath: gridParent
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 1354803356338082743, guid: bf35a5a937978a0498faae3b96c5a494, type: 3}
+      propertyPath: timerPrefab
+      value: 
+      objectReference: {fileID: 6188175048241410332, guid: d6dae6a0d8c411248b960407f0231f06, type: 3}
     - target: {fileID: 1354803356338082743, guid: bf35a5a937978a0498faae3b96c5a494, type: 3}
       propertyPath: connectRooms
       value: 1

@@ -11,6 +11,7 @@ TagManager:
   - Exit
   - FloorUI
   - ScoreUI
+  - ObjParent
   layers:
   - Default
   - TransparentFX

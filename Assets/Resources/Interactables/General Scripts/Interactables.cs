@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Interactables : MonoBehaviour
 {
-    [SerializeField][Range(0, 4)] private int objectType; // 0 = staircase
+    [SerializeField][Range(0, 4)] private int objectType; // 0 = staircase, 1 = timer
 
     //When player interacts with this object, do something based on object type
     private void OnTriggerEnter2D(Collider2D col)
@@ -15,6 +15,9 @@ public class Interactables : MonoBehaviour
             {
                 case 0:
                     GetComponent<Staircase>().OnInteract();
+                    break;  
+                case 1:
+                    GetComponent<timerCollectable>().OnInteract();
                     break;
             }
         }
