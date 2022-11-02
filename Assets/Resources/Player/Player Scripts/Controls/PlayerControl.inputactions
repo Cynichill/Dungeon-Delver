@@ -736,9 +736,27 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "DestroyChildren",
+                    "name": "DLA",
                     "type": "Button",
                     "id": "a84ba42f-1277-4d4c-9436-c6a109691f97",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "EnableDebug",
+                    "type": "Button",
+                    "id": "075f6825-572d-406c-ba2b-f7a76e9411d4",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "DLANM",
+                    "type": "Button",
+                    "id": "dd4386cb-b0e9-44e0-bf4d-3bc6c1cc5e54",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -804,11 +822,33 @@
                 {
                     "name": "",
                     "id": "1971d5fc-b4fd-4923-9e9e-614687dc50c9",
+                    "path": "<Keyboard>/7",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "DLA",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a468b2ab-b762-4c43-8e9d-f03042906cdf",
+                    "path": "<Keyboard>/0",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "EnableDebug",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d96f237e-ff1a-4cc4-8823-f16e3c9c6798",
                     "path": "<Keyboard>/6",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "DestroyChildren",
+                    "action": "DLANM",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

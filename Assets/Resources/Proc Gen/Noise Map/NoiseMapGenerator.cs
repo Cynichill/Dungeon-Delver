@@ -9,6 +9,8 @@ public class NoiseMapGenerator : MonoBehaviour
     private int mapSizeX;
     private int mapSizeY;
     public int[,] grid;
+    public PlayerControl controls;
+
 
     private GenerateMap genMap;
     [SerializeField] private int iterations = 6;
@@ -16,15 +18,19 @@ public class NoiseMapGenerator : MonoBehaviour
     [SerializeField] private int minMapBoundaries = 50;
     [SerializeField] private int maxMapBoundaries = 50;
 
+    private void Awake()
+    {
+        controls = new PlayerControl();
+        controls.Debug.DLANM.performed += ctx => GenerateNoiseGrid(true);
+    }
 
     private void Start()
     {
         genMap = GetComponent<GenerateMap>();
-        GenerateNoiseGrid();
-        genMap.GenerateDungeon(grid, iterations, mapSizeX, mapSizeY);
+        GenerateNoiseGrid(false);
     }
 
-    private void GenerateNoiseGrid()
+    private void GenerateNoiseGrid(bool DLA)
     {
         //Randomly select grid size
         mapSizeX = Random.Range(minMapBoundaries, maxMapBoundaries);
@@ -47,7 +53,7 @@ public class NoiseMapGenerator : MonoBehaviour
                 else
                 {
                     //If random number is bigger than noise map density..
-                    if (randomSeed.Next(0, 100) > density)
+                    if (randomSeed.Next(0, 100) > density && !DLA)
                     {
                         //Tile is a floor
                         grid[i, j] = 0;
@@ -57,8 +63,26 @@ public class NoiseMapGenerator : MonoBehaviour
                         //Tile is a wall
                         grid[i, j] = 1;
                     }
+
+                    if (DLA)
+                    {
+                        //Tile is a wall
+                        grid[i, j] = 1;
+                    }
                 }
             }
         }
+
+        genMap.GenerateDungeon(grid, iterations, mapSizeX, mapSizeY);
+    }
+
+    private void OnEnable()
+    {
+        controls.Enable();
+    }
+
+    private void OnDisable()
+    {
+        controls.Disable();
     }
 }

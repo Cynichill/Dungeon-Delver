@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour, IDataPersistence
     private static GameObject instance;
     public float saveTime = 30f;
     private DataPersistenceManager dataManager;
+    public bool debugOn = false;
 
     //Don't destroy this object on load, makes sure duplicates do not appear by deleting them if the object already exists elsewhere
     private void Start()
@@ -22,9 +23,11 @@ public class GameManager : MonoBehaviour, IDataPersistence
 
             dataManager = GameObject.FindGameObjectWithTag("DataManager").GetComponent<DataPersistenceManager>();
     }
-    public void RestartScene()
+    public void RestartScene(bool enableDebug)
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+
+        debugOn = enableDebug;
     }
 
     public void EndGame()

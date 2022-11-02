@@ -11,6 +11,7 @@ public class GenerateMap : MonoBehaviour
     //Control
     public PlayerControl controls;
     public bool debugControl;
+    public bool testingDLA;
 
     //Map Size
     private int mapSizeX = 0;
@@ -33,26 +34,28 @@ public class GenerateMap : MonoBehaviour
     private Transform exit;
     private List<Island> leftoverIslands = new List<Island>();
     private List<TileCoordinate> worstTiles = new List<TileCoordinate>();
+    private GameManager gm;
 
     private void Awake()
     {
+        gm = GameObject.FindGameObjectWithTag("gm").GetComponent<GameManager>();
+        debugControl = gm.debugOn;
         controls = new PlayerControl();
-        if (debugControl)
-        {
-            controls.Debug.CAIteration.performed += ctx => ApplyCellularAutomata(tempGrid, 1);
-            controls.Debug.Floodfill.performed += ctx => FloodFill();
-            controls.Debug.ConnectIslands.performed += ctx => ConnectAllIslands();
-            controls.Debug.PlaceObjects.performed += ctx => PlaceObjects(leftoverIslands.First());
-            controls.Debug.SpawnGrid.performed += ctx => SpawnGrid(tempGrid);
-            controls.Debug.DestroyChildren.performed += ctx => DestroyChildren();
-        }
-    }
+        controls.Debug.EnableDebug.performed += ctx => gm.RestartScene(true);
 
-    private void Start()
-    {
         player = GameObject.FindGameObjectWithTag("Player").transform;
         exit = GameObject.FindGameObjectWithTag("Exit").transform;
         objectParent = GameObject.FindGameObjectWithTag("ObjParent").transform;
+
+        if (debugControl)
+        {
+            controls.Debug.CAIteration.performed += ctx => CADebug();
+            controls.Debug.Floodfill.performed += ctx => FloodFillDebug();
+            controls.Debug.ConnectIslands.performed += ctx => ConnectDebug();
+            controls.Debug.PlaceObjects.performed += ctx => PlaceObjectsDebug();
+            controls.Debug.SpawnGrid.performed += ctx => SpawnGridNow();
+            controls.Debug.DLA.performed += ctx => DLADebug();
+        }
     }
 
     struct TileCoordinate
@@ -110,12 +113,52 @@ public class GenerateMap : MonoBehaviour
 
         if (!debugControl)
         {
-            ApplyCellularAutomata(grid, count); //Apply CA to noise map
+            if (testingDLA)
+            {
+                ApplyDiffusionLimitedAggregation(); //Apply DLA
+            }
+            ApplyCellularAutomata(grid, count); //Apply CA to noise map or DLA
             FloodFill(); //Use floodfill to fill and remove areas of the map
             ConnectAllIslands(); //Connect all islands 
             PlaceObjects(leftoverIslands.First());//This will be the final map, place player and exit somewhere
             SpawnGrid(tempGrid); //Spawn dungeon
         }
+    }
+
+    private void SpawnGridNow()
+    {
+        DestroyChildren();
+        SpawnGrid(tempGrid);
+    }
+
+    private void CADebug()
+    {
+        ApplyCellularAutomata(tempGrid, 1);
+        SpawnGridNow();
+    }
+
+    private void DLADebug()
+    {
+        ApplyDiffusionLimitedAggregation();
+        SpawnGridNow();
+    }
+
+    private void FloodFillDebug()
+    {
+        FloodFill();
+        SpawnGridNow();
+    }
+
+    private void ConnectDebug()
+    {
+        ConnectAllIslands();
+        SpawnGridNow();
+    }
+
+    private void PlaceObjectsDebug()
+    {
+        PlaceObjects(leftoverIslands.First());
+        SpawnGridNow();
     }
 
     private void ApplyCellularAutomata(int[,] grid, int count)
@@ -173,6 +216,123 @@ public class GenerateMap : MonoBehaviour
 
             grid = tempGrid;
         }
+    }
+
+    private void ApplyDiffusionLimitedAggregation()
+    {
+        List<TileCoordinate> floorTiles = new List<TileCoordinate>();
+
+        //Carve out small section of squares in approximate middle of map
+        for (int x = mapSizeX / 2 - 1; x <= mapSizeX / 2 + 1; x++)
+        {
+            for (int y = mapSizeY / 2 - 1; y <= mapSizeY / 2 + 1; y++)
+            {
+                if (checkMapBoundary(x, y))
+                {
+                    tempGrid[x, y] = 0;
+                }
+            }
+        }
+
+        floorTiles = GetSurroundingTiles(mapSizeX / 2, mapSizeY / 2);
+
+        int maxSteps = 500; //Random.Range(150, 200);
+        int maxShots = 8; //Random.Range(15, 40);
+
+        List<TileCoordinate> dugTiles = new List<TileCoordinate>();
+        List<TileCoordinate> tempDugTiles = new List<TileCoordinate>();
+
+        //Get random seed
+        System.Random randomSeed = new System.Random(Time.time.ToString().GetHashCode());
+
+        for (int q = 0; q < maxShots; q++)
+        {
+            int i = 0;
+
+            //Choose random floor tile from starting 'seed'
+            int startTile = randomSeed.Next(floorTiles.Count);
+            int x = floorTiles[startTile].xCoord;
+            int y = floorTiles[startTile].yCoord;
+
+            int moveDirection = 0;
+            int bannedDirection = 5;
+
+            while (i < maxSteps)
+            {
+                //Cardinal direction
+                moveDirection = randomSeed.Next(0, 4);
+
+                while (moveDirection == bannedDirection)
+                {
+                    moveDirection = randomSeed.Next(0, 4);
+                }
+
+                switch (moveDirection)
+                {
+                    //Up
+                    case 0:
+                        y += 1;
+                        bannedDirection = 1;
+                        break;
+
+                    //Down
+                    case 1:
+                        y -= 1;
+                        bannedDirection = 0;
+                        break;
+
+                    //Left
+                    case 2:
+                        x -= 1;
+                        bannedDirection = 3;
+                        break;
+
+                    //Right
+                    case 3:
+                        x += 1;
+                        bannedDirection = 2;
+                        break;
+                }
+
+                i++;
+
+                //If new tile is in range..
+                if (checkMapBoundary(x, y))
+                {
+                    foreach (TileCoordinate tile in dugTiles)
+                    {
+                        if (tile.xCoord == x && tile.yCoord == y)
+                        {
+                            //Ran into dug tile, stop!
+                            break;
+                        }
+                    }
+
+                    //If new tile is a wall
+                    if (tempGrid[x, y] == 1)
+                    {
+                        //Turn it into a floor
+                        tempGrid[x, y] = 0;
+                        //Add tile to available floor tiles
+                        //floorTiles.Add(new TileCoordinate(x, y));
+                        tempDugTiles.Add(new TileCoordinate(x, y));
+                        //break;
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            foreach (TileCoordinate tile in tempDugTiles)
+            {
+                dugTiles.Add(tile);
+            }
+            tempDugTiles.Clear();
+
+        }
+
     }
 
     private bool checkMapBoundary(int x, int y)
@@ -364,7 +524,7 @@ public class GenerateMap : MonoBehaviour
 
     private void CreatePassage(Island Island1, Island Island2, TileCoordinate tile1, TileCoordinate tile2)
     {
-        Debug.DrawLine(CoordToWorldPoint(tile1), CoordToWorldPoint(tile2), Color.green, 100);
+        //Debug.DrawLine(CoordToWorldPoint(tile1), CoordToWorldPoint(tile2), Color.green, 100);
         List<TileCoordinate> line = PassageLine(tile1, tile2); //Get line from point 1 to point 1
 
         //Turn line into passageway

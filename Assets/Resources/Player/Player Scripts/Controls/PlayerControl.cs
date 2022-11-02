@@ -758,9 +758,27 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""DestroyChildren"",
+                    ""name"": ""DLA"",
                     ""type"": ""Button"",
                     ""id"": ""a84ba42f-1277-4d4c-9436-c6a109691f97"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""EnableDebug"",
+                    ""type"": ""Button"",
+                    ""id"": ""075f6825-572d-406c-ba2b-f7a76e9411d4"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""DLANM"",
+                    ""type"": ""Button"",
+                    ""id"": ""dd4386cb-b0e9-44e0-bf4d-3bc6c1cc5e54"",
                     ""expectedControlType"": ""Button"",
                     ""processors"": """",
                     ""interactions"": """",
@@ -826,11 +844,33 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""1971d5fc-b4fd-4923-9e9e-614687dc50c9"",
+                    ""path"": ""<Keyboard>/7"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""DLA"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a468b2ab-b762-4c43-8e9d-f03042906cdf"",
+                    ""path"": ""<Keyboard>/0"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""EnableDebug"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d96f237e-ff1a-4cc4-8823-f16e3c9c6798"",
                     ""path"": ""<Keyboard>/6"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse"",
-                    ""action"": ""DestroyChildren"",
+                    ""action"": ""DLANM"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -923,7 +963,9 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
         m_Debug_ConnectIslands = m_Debug.FindAction("Connect Islands", throwIfNotFound: true);
         m_Debug_PlaceObjects = m_Debug.FindAction("Place Objects", throwIfNotFound: true);
         m_Debug_SpawnGrid = m_Debug.FindAction("Spawn Grid", throwIfNotFound: true);
-        m_Debug_DestroyChildren = m_Debug.FindAction("DestroyChildren", throwIfNotFound: true);
+        m_Debug_DLA = m_Debug.FindAction("DLA", throwIfNotFound: true);
+        m_Debug_EnableDebug = m_Debug.FindAction("EnableDebug", throwIfNotFound: true);
+        m_Debug_DLANM = m_Debug.FindAction("DLANM", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -1134,7 +1176,9 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
     private readonly InputAction m_Debug_ConnectIslands;
     private readonly InputAction m_Debug_PlaceObjects;
     private readonly InputAction m_Debug_SpawnGrid;
-    private readonly InputAction m_Debug_DestroyChildren;
+    private readonly InputAction m_Debug_DLA;
+    private readonly InputAction m_Debug_EnableDebug;
+    private readonly InputAction m_Debug_DLANM;
     public struct DebugActions
     {
         private @PlayerControl m_Wrapper;
@@ -1144,7 +1188,9 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
         public InputAction @ConnectIslands => m_Wrapper.m_Debug_ConnectIslands;
         public InputAction @PlaceObjects => m_Wrapper.m_Debug_PlaceObjects;
         public InputAction @SpawnGrid => m_Wrapper.m_Debug_SpawnGrid;
-        public InputAction @DestroyChildren => m_Wrapper.m_Debug_DestroyChildren;
+        public InputAction @DLA => m_Wrapper.m_Debug_DLA;
+        public InputAction @EnableDebug => m_Wrapper.m_Debug_EnableDebug;
+        public InputAction @DLANM => m_Wrapper.m_Debug_DLANM;
         public InputActionMap Get() { return m_Wrapper.m_Debug; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1169,9 +1215,15 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
                 @SpawnGrid.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnSpawnGrid;
                 @SpawnGrid.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnSpawnGrid;
                 @SpawnGrid.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnSpawnGrid;
-                @DestroyChildren.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnDestroyChildren;
-                @DestroyChildren.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnDestroyChildren;
-                @DestroyChildren.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnDestroyChildren;
+                @DLA.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnDLA;
+                @DLA.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnDLA;
+                @DLA.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnDLA;
+                @EnableDebug.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnEnableDebug;
+                @EnableDebug.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnEnableDebug;
+                @EnableDebug.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnEnableDebug;
+                @DLANM.started -= m_Wrapper.m_DebugActionsCallbackInterface.OnDLANM;
+                @DLANM.performed -= m_Wrapper.m_DebugActionsCallbackInterface.OnDLANM;
+                @DLANM.canceled -= m_Wrapper.m_DebugActionsCallbackInterface.OnDLANM;
             }
             m_Wrapper.m_DebugActionsCallbackInterface = instance;
             if (instance != null)
@@ -1191,9 +1243,15 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
                 @SpawnGrid.started += instance.OnSpawnGrid;
                 @SpawnGrid.performed += instance.OnSpawnGrid;
                 @SpawnGrid.canceled += instance.OnSpawnGrid;
-                @DestroyChildren.started += instance.OnDestroyChildren;
-                @DestroyChildren.performed += instance.OnDestroyChildren;
-                @DestroyChildren.canceled += instance.OnDestroyChildren;
+                @DLA.started += instance.OnDLA;
+                @DLA.performed += instance.OnDLA;
+                @DLA.canceled += instance.OnDLA;
+                @EnableDebug.started += instance.OnEnableDebug;
+                @EnableDebug.performed += instance.OnEnableDebug;
+                @EnableDebug.canceled += instance.OnEnableDebug;
+                @DLANM.started += instance.OnDLANM;
+                @DLANM.performed += instance.OnDLANM;
+                @DLANM.canceled += instance.OnDLANM;
             }
         }
     }
@@ -1268,6 +1326,8 @@ public partial class @PlayerControl : IInputActionCollection2, IDisposable
         void OnConnectIslands(InputAction.CallbackContext context);
         void OnPlaceObjects(InputAction.CallbackContext context);
         void OnSpawnGrid(InputAction.CallbackContext context);
-        void OnDestroyChildren(InputAction.CallbackContext context);
+        void OnDLA(InputAction.CallbackContext context);
+        void OnEnableDebug(InputAction.CallbackContext context);
+        void OnDLANM(InputAction.CallbackContext context);
     }
 }

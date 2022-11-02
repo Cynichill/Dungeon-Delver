@@ -34,7 +34,7 @@ public class Staircase : MonoBehaviour
             //Save player info
 
             //Reload scene and generate new floor
-            gm.RestartScene();
+            gm.RestartScene(false);
         }
 
     }

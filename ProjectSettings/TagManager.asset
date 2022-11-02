@@ -12,6 +12,7 @@ TagManager:
   - FloorUI
   - ScoreUI
   - ObjParent
+  - Generation
   layers:
   - Default
   - TransparentFX
