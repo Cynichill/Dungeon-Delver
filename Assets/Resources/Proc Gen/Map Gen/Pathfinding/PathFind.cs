@@ -1,44 +1,32 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
 public class PathFind : MonoBehaviour
 {
-    private int[,] grid;
     private int mapX;
     private int mapY;
-    private List<TileCoordinate> openList;
-    private List<TileCoordinate> closedList;
 
     private const int moveCardinalCost = 10;
 
-    public void GetGrid(int[,] receivedGrid, int mapSizeX, int mapSizeY)
+    public void GetGridSize(int mapSizeX, int mapSizeY)
     {
-        grid = receivedGrid;
         mapX = mapSizeX;
         mapY = mapSizeY;
     }
 
-    public List<TileCoordinate> TilePath(TileCoordinate startTile, TileCoordinate endTile)
+    public List<TileCoordinate> TilePath(TileCoordinate[,] receivedGrid, TileCoordinate startTile, TileCoordinate endTile)
     {
-        openList = new List<TileCoordinate> { startTile };
-        closedList = new List<TileCoordinate>();
+        HeapOptimization<TileCoordinate> openList = new HeapOptimization<TileCoordinate>(mapX * mapY);
+        openList.Add(startTile);
+        List<TileCoordinate> closedList = new List<TileCoordinate>();
 
-        /*
-                for (int x = 0; x < mapX; x++)
-                {
-                    for (int y = 0; y < mapY; y++)
-                    {
-                        if (grid[x, y] == 0)
-                        {
-                            TileCoordinate pathNode = new TileCoordinate(x, y);
-                            pathNode.gCost = int.MaxValue;
-                            pathNode.CalcFCost();
-                            pathNode.prevTile = null;
-                        }
-                    }
-                }
-                */
+        for (int i = 0; i < mapX; i++)
+        {
+            for (int j = 0; j < mapY; j++)
+            {
+                receivedGrid[i, j].ResetCosts(); //Reset costs and previous tile so multiple iterations don't get messed up by stored data
+            }
+        }
 
         startTile.gCost = 0;
         startTile.hCost = CalcDistanceCost(startTile, endTile);
@@ -46,25 +34,28 @@ public class PathFind : MonoBehaviour
 
         while (openList.Count > 0)
         {
-            TileCoordinate currentTile = GetLowestFCostTile(openList);
-            if (currentTile.xCoord == endTile.xCoord && currentTile.yCoord == endTile.yCoord)
+            TileCoordinate currentTile = openList.RemoveFirst();
+            if (currentTile == endTile)
             {
                 endTile = currentTile;
                 //Reached the final tile
+                openList.HeapClear();
                 return CalcPath(endTile);
             }
 
-            openList.Remove(currentTile);
+            // openList.Remove(currentTile);
             closedList.Add(currentTile);
 
-            foreach (TileCoordinate neighbour in GetListOfNeighbours(currentTile))
+            foreach (TileCoordinate neighbour in GetListOfNeighbours(receivedGrid, currentTile))
             {
+                //If tile has already been in openList previously, do not check
                 if (closedList.Contains(neighbour))
                 {
                     continue;
                 }
                 else
                 {
+                    //If potential cost is lower than current cost, add neighbour to open list
                     int potentialGCost = currentTile.gCost + CalcDistanceCost(currentTile, neighbour);
 
                     if (potentialGCost < neighbour.gCost)
@@ -74,32 +65,17 @@ public class PathFind : MonoBehaviour
                         neighbour.hCost = CalcDistanceCost(neighbour, endTile);
                         neighbour.CalcFCost();
 
-                        bool unused = true;
-
-                        foreach(TileCoordinate tile in openList)
-                        {
-                            if(tile.xCoord == neighbour.xCoord && tile.yCoord == neighbour.yCoord)
-                            {
-                                unused = false;
-                            }
-                        }
-
-                        if(unused)
-                        {
-                            openList.Add(neighbour);
-                        }
-                        
+                        openList.Add(neighbour);
                     }
                 }
             }
         }
 
-        Debug.Log("Didn't work!");
         //No more open tiles
         return null;
     }
 
-    private List<TileCoordinate> GetListOfNeighbours(TileCoordinate currentTile)
+    private List<TileCoordinate> GetListOfNeighbours(TileCoordinate[,] receivedGrid, TileCoordinate currentTile)
     {
         List<TileCoordinate> neighbours = new List<TileCoordinate>();
 
@@ -112,22 +88,19 @@ public class PathFind : MonoBehaviour
         {
             for (int j = y - 1; j <= y + 1; j++)
             {
-                if (checkMapBoundary(i, j) && grid[i, j] == 0)
+                if (checkMapBoundary(i, j) && receivedGrid[i, j].floor == true)
                 {
                     //Only treat cardinal directions as neighbours
                     if (i == x || j == y)
                     {
                         if (!(i == x && j == y))
                         {
-                            TileCoordinate tile = new TileCoordinate(i, j);
-                            tile.gCost = int.MaxValue;
-                            neighbours.Add(tile);
+                            neighbours.Add(receivedGrid[i, j]); //Add neighbour to list
                         }
                     }
                 }
             }
         }
-
         return neighbours;
     }
 
@@ -156,7 +129,7 @@ public class PathFind : MonoBehaviour
             currentTile = currentTile.prevTile;
         }
 
-        path.Reverse();
+        path.Reverse(); //Flip path so it's in the correct order
 
         return path;
     }
@@ -169,19 +142,4 @@ public class PathFind : MonoBehaviour
         return Mathf.Min(xDistance, yDistance) + moveCardinalCost * remaining;
     }
 
-    private TileCoordinate GetLowestFCostTile(List<TileCoordinate> pathTileList)
-    {
-        TileCoordinate lowestFCostNode = pathTileList[0];
-
-        for (int i = 1; i < pathTileList.Count; i++)
-        {
-            if (pathTileList[i].fCost < lowestFCostNode.fCost)
-            {
-                lowestFCostNode = pathTileList[i];
-            }
-        }
-
-        return lowestFCostNode;
-
-    }
 }

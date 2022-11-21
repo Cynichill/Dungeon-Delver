@@ -12,7 +12,7 @@ public class Island
     {
     }
 
-    public Island(List<TileCoordinate> IslandTiles, int[,] grid) //Take in a list of tiles and the map
+    public Island(List<TileCoordinate> IslandTiles, TileCoordinate[,] grid) //Take in a list of tiles and the map
     {
         tiles = IslandTiles;
         IslandSize = tiles.Count;
@@ -26,7 +26,7 @@ public class Island
                 {
                     if (x == tile.xCoord || y == tile.yCoord) //Check ONLY cardinals
                     {
-                        if (grid[x, y] == 1) //If wall is found
+                        if (grid[x, y].floor == false) //If wall is found
                         {
                             edgeTiles.Add(tile); //Add to edge tile list
                         }

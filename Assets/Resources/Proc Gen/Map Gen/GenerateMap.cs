@@ -27,7 +27,7 @@ public class GenerateMap : MonoBehaviour
     [SerializeField] private int wallThresholdSize = 50;
     [SerializeField] private int floorThresholdSize = 50;
     [SerializeField] private int passagewayRadius = 1;
-    private int[,] tempGrid;
+    private TileCoordinate[,] tempGrid;
     private List<int> usedSpots = new List<int>();
     private List<int> usedWorstSpots = new List<int>();
     private Transform player;
@@ -60,13 +60,13 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
-    public void GenerateDungeon(int[,] grid, int count, int mapSizeXParam, int mapSizeYParam)
+    public void GenerateDungeon(TileCoordinate[,] grid, int count, int mapSizeXParam, int mapSizeYParam)
     {
         mapSizeX = mapSizeXParam;
         mapSizeY = mapSizeYParam;
         tempGrid = grid; //On first iteration, tempgrid is noise map, on further it's the next iteration
 
-        pf.GetGrid(tempGrid, mapSizeX, mapSizeY);
+        pf.GetGridSize(mapSizeX, mapSizeY);
 
         if (!debugControl)
         {
@@ -74,7 +74,7 @@ public class GenerateMap : MonoBehaviour
             {
                 ApplyDiffusionLimitedAggregation(); //Apply DLA
             }
-            ApplyCellularAutomata(grid, count); //Apply CA to noise map or DLA
+            ApplyCellularAutomata(tempGrid, count); //Apply CA to noise map or DLA
             FloodFill(); //Use floodfill to fill and remove areas of the map
             ConnectAllIslands(); //Connect all islands 
             PlaceObjects(leftoverIslands.First());//This will be the final map, place player and exit somewhere
@@ -118,7 +118,7 @@ public class GenerateMap : MonoBehaviour
         SpawnGridNow();
     }
 
-    private void ApplyCellularAutomata(int[,] grid, int count)
+    private void ApplyCellularAutomata(TileCoordinate[,] grid, int count)
     {
         //For x iterations
         for (int i = 0; i < count; i++)
@@ -142,7 +142,7 @@ public class GenerateMap : MonoBehaviour
                                 if (x != j || y != k)
                                 {
                                     //If neighbouring cell is wall, add to count
-                                    if (grid[x, y] == 1)
+                                    if (grid[x, y].floor == false)
                                     {
                                         wallCount++;
                                     }
@@ -158,11 +158,11 @@ public class GenerateMap : MonoBehaviour
                     //Add new cell to new grid based on old grid's neighbouring cells
                     if (wallCount > 4)
                     {
-                        tempGrid[j, k] = 1; //Wall
+                        tempGrid[j, k].floor = false; //Wall
                     }
                     else if (wallCount < 4)
                     {
-                        tempGrid[j, k] = 0; //Floor
+                        tempGrid[j, k].floor = true; //Floor
                     }
                     else if (wallCount == 4)
                     {
@@ -186,7 +186,7 @@ public class GenerateMap : MonoBehaviour
             {
                 if (checkMapBoundary(x, y))
                 {
-                    tempGrid[x, y] = 0;
+                    tempGrid[x, y].floor = true;
                 }
             }
         }
@@ -266,13 +266,13 @@ public class GenerateMap : MonoBehaviour
                     }
 
                     //If new tile is a wall
-                    if (tempGrid[x, y] == 1)
+                    if (tempGrid[x, y].floor == false)
                     {
                         //Turn it into a floor
-                        tempGrid[x, y] = 0;
+                        tempGrid[x, y].floor = true;
                         //Add tile to available floor tiles
                         //floorTiles.Add(new TileCoordinate(x, y));
-                        tempDugTiles.Add(new TileCoordinate(x, y));
+                        tempDugTiles.Add(tempGrid[x, y]);
                         //break;
                     }
                 }
@@ -305,7 +305,7 @@ public class GenerateMap : MonoBehaviour
 
     }
 
-    private List<List<TileCoordinate>> GetTileRegions(int tileType)
+    private List<List<TileCoordinate>> GetTileRegions(bool tileType)
     {
         List<List<TileCoordinate>> regions = new List<List<TileCoordinate>>(); //Create a list of tile regions, or connected tile clusters
         int[,] tileFlags = new int[mapSizeX, mapSizeY]; //Create an array equal to the size of the map to mark spaces we've checked
@@ -314,7 +314,7 @@ public class GenerateMap : MonoBehaviour
         {
             for (int j = 0; j < mapSizeY; j++)
             {
-                if (tileFlags[i, j] == 0 && tempGrid[i, j] == tileType) //If area has not been checked and is of the type we are checking..
+                if (tileFlags[i, j] == 0 && tempGrid[i, j].floor == tileType) //If area has not been checked and is of the type we are checking..
                 {
                     List<TileCoordinate> newRegion = GetSurroundingTiles(i, j); //Create a list of surrounding connected tiles of the same type
                     regions.Add(newRegion);
@@ -334,7 +334,7 @@ public class GenerateMap : MonoBehaviour
     {
         List<TileCoordinate> tiles = new List<TileCoordinate>(); //Create a list of tiles
         int[,] tileFlags = new int[mapSizeX, mapSizeY]; //Create a list of tile flags to mark which have been checked
-        int tileType = tempGrid[initX, initY]; //Match tile type of initial tile
+        bool tileType = tempGrid[initX, initY].floor; //Match tile type of initial tile
 
         Queue<TileCoordinate> queue = new Queue<TileCoordinate>(); //Queue up initial tile
         queue.Enqueue(new TileCoordinate(initX, initY));
@@ -342,8 +342,8 @@ public class GenerateMap : MonoBehaviour
 
         while (queue.Count > 0)
         {
-            TileCoordinate tile = queue.Dequeue(); //Dequeue current tile
-            tiles.Add(tile); //Add tile to list
+            tiles.Add(queue.Dequeue()); //Add tile to list
+            TileCoordinate tile = tiles.Last(); //Dequeue current tile
 
             //Check all adjacent tiles to see if they match the type of current tile
             for (int x = tile.xCoord - 1; x <= tile.xCoord + 1; x++)
@@ -352,10 +352,10 @@ public class GenerateMap : MonoBehaviour
                 {
                     if (checkMapBoundary(x, y) && (x == tile.xCoord || y == tile.yCoord)) //If tile is adjacent and in bounds..
                     {
-                        if (tileFlags[x, y] == 0 && tempGrid[x, y] == tileType)
+                        if (tileFlags[x, y] == 0 && tempGrid[x, y].floor == tileType)
                         {
                             tileFlags[x, y] = 1; //Mark as flagged
-                            queue.Enqueue(new TileCoordinate(x, y)); //Queue tile
+                            queue.Enqueue(tempGrid[x, y]); //Queue tile
                         }
                     }
                 }
@@ -367,26 +367,26 @@ public class GenerateMap : MonoBehaviour
 
     private void FloodFill()
     {
-        List<List<TileCoordinate>> wallRegions = GetTileRegions(1); //Find all tiles that are walls
+        List<List<TileCoordinate>> wallRegions = GetTileRegions(false); //Find all tiles that are walls
         foreach (List<TileCoordinate> wallRegion in wallRegions)
         {
             if (wallRegion.Count < wallThresholdSize) //Destroy small clusters of walls that are smaller than the threshold
             {
                 foreach (TileCoordinate tile in wallRegion)
                 {
-                    tempGrid[tile.xCoord, tile.yCoord] = 0;
+                    tempGrid[tile.xCoord, tile.yCoord].floor = true;
                 }
             }
         }
 
-        List<List<TileCoordinate>> floorRegions = GetTileRegions(0); //Find all tiles that are floors
+        List<List<TileCoordinate>> floorRegions = GetTileRegions(true); //Find all tiles that are floors
         foreach (List<TileCoordinate> floorRegion in floorRegions)
         {
             if (floorRegion.Count < floorThresholdSize) //Destroy small clusters of floors that are smaller than the threshold
             {
                 foreach (TileCoordinate tile in floorRegion)
                 {
-                    tempGrid[tile.xCoord, tile.yCoord] = 1;
+                    tempGrid[tile.xCoord, tile.yCoord].floor = false;
                 }
             }
             else
@@ -405,7 +405,7 @@ public class GenerateMap : MonoBehaviour
             ConnectIslands(leftoverIslands);
             leftoverIslands.Clear(); //Clear list
 
-            List<List<TileCoordinate>> newFloorRegions = GetTileRegions(0); //Find all seperated Islands
+            List<List<TileCoordinate>> newFloorRegions = GetTileRegions(true); //Find all seperated Islands
 
             foreach (List<TileCoordinate> floorRegion in newFloorRegions)
             {
@@ -547,7 +547,7 @@ public class GenerateMap : MonoBehaviour
         for (int i = 0; i < longest; i++)
         {
             //Add current point to line
-            line.Add(new TileCoordinate(x, y));
+            line.Add(tempGrid[x, y]);
 
             //If inverted, add step to Y, else add to X
             if (inverted)
@@ -596,7 +596,7 @@ public class GenerateMap : MonoBehaviour
                 {
                     if (checkMapBoundary(coord.xCoord + i, coord.yCoord + j)) //Check if proposed value is within map boundary
                     {
-                        tempGrid[coord.xCoord + i, coord.yCoord + j] = 0; //Create line
+                        tempGrid[coord.xCoord + i, coord.yCoord + j].floor = true; //Create line
                     }
                 }
             }
@@ -605,6 +605,7 @@ public class GenerateMap : MonoBehaviour
 
     private void PlaceObjects(Island viableTiles)
     {
+
         int playerSpawn = AllocateSpot(viableTiles.tiles);
         //Place player on random viable tile
         player.transform.position = new Vector3(viableTiles.tiles[playerSpawn].xCoord, viableTiles.tiles[playerSpawn].yCoord, 0);
@@ -613,7 +614,8 @@ public class GenerateMap : MonoBehaviour
 
         int exitSpawn = AllocateSpot(viableTiles.tiles);
 
-        while (FindDistanceBetweenTiles(viableTiles.tiles[playerSpawn], viableTiles.tiles[exitSpawn]) < threshold && usedSpots.Count != viableTiles.tiles.Count)
+
+        while (FindDistanceBetweenTiles(tempGrid[viableTiles.tiles[playerSpawn].xCoord, viableTiles.tiles[playerSpawn].yCoord], tempGrid[viableTiles.tiles[exitSpawn].xCoord, viableTiles.tiles[exitSpawn].yCoord]) < threshold && usedSpots.Count != viableTiles.tiles.Count)
         {
             exitSpawn = AllocateSpot(viableTiles.tiles);
         }
@@ -626,12 +628,12 @@ public class GenerateMap : MonoBehaviour
         int maxCollectables = (mapSizeX + mapSizeY) / 40; //Max is 200 size, so max 5 collectables
 
         int prevCollectable = playerSpawn;
-
+        
         for (int i = 0; i < maxCollectables; i++)
         {
             int collectable = AllocateSpot(viableTiles.tiles);
 
-            while (FindDistanceBetweenTiles(viableTiles.tiles[prevCollectable], viableTiles.tiles[collectable]) < threshold && usedSpots.Count != viableTiles.tiles.Count)
+            if(FindDistanceBetweenTiles(tempGrid[viableTiles.tiles[prevCollectable].xCoord, viableTiles.tiles[prevCollectable].yCoord], tempGrid[viableTiles.tiles[collectable].xCoord, viableTiles.tiles[collectable].yCoord]) < threshold && usedSpots.Count != viableTiles.tiles.Count)
             {
                 collectable = AllocateSpot(viableTiles.tiles);
             }
@@ -646,8 +648,10 @@ public class GenerateMap : MonoBehaviour
             var collect = Instantiate(timerPrefab, new Vector3(viableTiles.tiles[collectable].xCoord, viableTiles.tiles[collectable].yCoord, 0), Quaternion.identity);
             collect.transform.parent = objectParent.transform;
         }
+        
 
         //IF SYSTEM HAS MORE OBJECTS TO PLACE THAN VIABLE TILES, ALLOCATESPOT WILL CAUSE INFINITE LOOP
+
     }
 
     private int AllocateSpot(List<TileCoordinate> viableTiles)
@@ -697,19 +701,19 @@ public class GenerateMap : MonoBehaviour
         return false;
     }
 
-    private void SpawnGrid(int[,] grid)
+    private void SpawnGrid(TileCoordinate[,] grid)
     {
         //Create gameobjects using prefabs based on grid
         for (int i = 0; i < mapSizeX; i++)
         {
             for (int j = 0; j < mapSizeY; j++)
             {
-                if (grid[i, j] == 0)
+                if (grid[i, j].floor == true)
                 {
                     var tile = Instantiate(floorPrefab, new Vector3(i, j, 0), Quaternion.identity);
                     tile.transform.parent = gameObject.transform;
                 }
-                else if (grid[i, j] == 1)
+                else if (grid[i, j].floor == false)
                 {
                     var tile = Instantiate(wallPrefab, new Vector3(i, j, 0), Quaternion.identity);
                     tile.transform.parent = gameObject.transform;
@@ -737,8 +741,14 @@ public class GenerateMap : MonoBehaviour
 
     private int FindDistanceBetweenTiles(TileCoordinate startTile, TileCoordinate endTile)
     {
-        List<TileCoordinate> tempPath = pf.TilePath(startTile, endTile);
-        Debug.Log(tempPath.Last().fCost / 10);
+        List<TileCoordinate> tempPath = new List<TileCoordinate>();
+        tempPath = pf.TilePath(tempGrid, startTile, endTile);
+
+        if (tempPath == null)
+        {
+            return int.MaxValue;
+        }
+
         return tempPath.Last().fCost / 10;
     }
 
@@ -759,4 +769,5 @@ public class GenerateMap : MonoBehaviour
     {
         controls.Disable();
     }
+
 }
