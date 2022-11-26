@@ -15,9 +15,18 @@ public class Interactables : MonoBehaviour
             {
                 case 0:
                     GetComponent<Staircase>().OnInteract();
-                    break;  
+                    break;
                 case 1:
-                    GetComponent<timerCollectable>().OnInteract();
+                    GetComponent<TimerCollectable>().OnInteract();
+                    break;
+            }
+        }
+        else if (col.gameObject.tag == "Collector")
+        {
+            switch (objectType)
+            {
+                case 1:
+                    GetComponent<TimerCollectable>().EnemyCollect();
                     break;
             }
         }

@@ -10,6 +10,8 @@ public class TileCoordinate : IHeapItem<TileCoordinate>
     public int hCost;
     public int fCost;
     public bool floor = false;
+    public int dijkstraDistance = int.MaxValue;
+    public bool dijkstraVisited = false;
     int heapIndex;
 
     public TileCoordinate prevTile;
@@ -37,6 +39,17 @@ public class TileCoordinate : IHeapItem<TileCoordinate>
         hCost = 0;
         fCost = 0;
         prevTile = null;
+    }
+
+    public void ResetDijkstra()
+    {
+        dijkstraDistance = int.MaxValue;
+        dijkstraVisited = false;
+    }
+
+    public void ResetMarker()
+    {
+        dijkstraVisited = false;
     }
 
     public int HeapIndex

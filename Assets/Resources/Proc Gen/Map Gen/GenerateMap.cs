@@ -21,13 +21,15 @@ public class GenerateMap : MonoBehaviour
     [SerializeField] private GameObject floorPrefab;
     [SerializeField] private GameObject wallPrefab;
     [SerializeField] private GameObject timerPrefab;
+    [SerializeField] private GameObject chaserPrefab;
+    [SerializeField] private GameObject collectorPrefab;
     private Transform objectParent;
 
     //Generation Rules
     [SerializeField] private int wallThresholdSize = 50;
     [SerializeField] private int floorThresholdSize = 50;
     [SerializeField] private int passagewayRadius = 1;
-    private TileCoordinate[,] tempGrid;
+    public TileCoordinate[,] tempGrid;
     private List<int> usedSpots = new List<int>();
     private List<int> usedWorstSpots = new List<int>();
     private Transform player;
@@ -36,7 +38,8 @@ public class GenerateMap : MonoBehaviour
     private List<TileCoordinate> worstTiles = new List<TileCoordinate>();
     private GameManager gm;
     [SerializeField] private PathFind pf;
-    private int threshold = 30;
+    private int threshold = 20;
+    private List<TileCoordinate> farAwayTiles = new List<TileCoordinate>();
 
     private void Awake()
     {
@@ -606,52 +609,77 @@ public class GenerateMap : MonoBehaviour
     private void PlaceObjects(Island viableTiles)
     {
 
+        List<TileCoordinate> sources = new List<TileCoordinate>();
+
         int playerSpawn = AllocateSpot(viableTiles.tiles);
+
         //Place player on random viable tile
         player.transform.position = new Vector3(viableTiles.tiles[playerSpawn].xCoord, viableTiles.tiles[playerSpawn].yCoord, 0);
 
-        //List<TileCoordinate> farAwayTiles = FindDistanceBetweenAllTiles(viableTiles.tiles[playerSpawn], viableTiles);
+        sources.Add(viableTiles.tiles[playerSpawn]);
 
-        int exitSpawn = AllocateSpot(viableTiles.tiles);
+        CreateDijkstraMap(sources);
 
-
-        while (FindDistanceBetweenTiles(tempGrid[viableTiles.tiles[playerSpawn].xCoord, viableTiles.tiles[playerSpawn].yCoord], tempGrid[viableTiles.tiles[exitSpawn].xCoord, viableTiles.tiles[exitSpawn].yCoord]) < threshold && usedSpots.Count != viableTiles.tiles.Count)
+        if (farAwayTiles.Count == 0)
         {
-            exitSpawn = AllocateSpot(viableTiles.tiles);
+            //Bad generation, can't place exit
+            gm.RestartScene(false);
         }
+
+        int exitSpawn = AllocateSpot(farAwayTiles);
 
         //Place exit on random viable tile
-        exit.transform.position = new Vector3(viableTiles.tiles[exitSpawn].xCoord, viableTiles.tiles[exitSpawn].yCoord, 0);
+        exit.transform.position = new Vector3(farAwayTiles[exitSpawn].xCoord, farAwayTiles[exitSpawn].yCoord, 0);
 
-        //FindDistanceBetweenTiles(viableTiles.tiles[playerSpawn], viableTiles.tiles[exitSpawn]);
+        sources.Add(farAwayTiles[exitSpawn]);
 
-        int maxCollectables = (mapSizeX + mapSizeY) / 40; //Max is 200 size, so max 5 collectables
+        CreateDijkstraMap(sources);
 
-        int prevCollectable = playerSpawn;
-        
-        for (int i = 0; i < maxCollectables; i++)
+        if (farAwayTiles.Count > 0)
         {
-            int collectable = AllocateSpot(viableTiles.tiles);
 
-            if(FindDistanceBetweenTiles(tempGrid[viableTiles.tiles[prevCollectable].xCoord, viableTiles.tiles[prevCollectable].yCoord], tempGrid[viableTiles.tiles[collectable].xCoord, viableTiles.tiles[collectable].yCoord]) < threshold && usedSpots.Count != viableTiles.tiles.Count)
-            {
-                collectable = AllocateSpot(viableTiles.tiles);
-            }
+            int enemySpawn = AllocateSpot(farAwayTiles);
 
-            prevCollectable = collectable;
+            var chaser = Instantiate(chaserPrefab, new Vector3(farAwayTiles[enemySpawn].xCoord, farAwayTiles[enemySpawn].yCoord, 0), Quaternion.identity);
+            chaser.transform.parent = objectParent.transform;
+            chaser.GetComponent<ChaserAI>().grid = tempGrid;
+            chaser.GetComponent<ChaserAI>().FindObjects();
+            chaser.GetComponent<ChaserAI>().SetTarget(player.transform.position);
 
-            if (usedSpots.Count == viableTiles.tiles.Count)
-            {
-                break;
-            }
+            sources.Add(farAwayTiles[enemySpawn]);
+            CreateDijkstraMap(sources);
 
-            var collect = Instantiate(timerPrefab, new Vector3(viableTiles.tiles[collectable].xCoord, viableTiles.tiles[collectable].yCoord, 0), Quaternion.identity);
-            collect.transform.parent = objectParent.transform;
         }
-        
 
-        //IF SYSTEM HAS MORE OBJECTS TO PLACE THAN VIABLE TILES, ALLOCATESPOT WILL CAUSE INFINITE LOOP
+        if (farAwayTiles.Count > 0)
+        {
+            int collectorSpawn = AllocateSpot(farAwayTiles);
 
+            var collector = Instantiate(collectorPrefab, new Vector3(farAwayTiles[collectorSpawn].xCoord, farAwayTiles[collectorSpawn].yCoord, 0), Quaternion.identity);
+            collector.transform.parent = objectParent.transform;
+            collector.GetComponent<CollectorAI>().grid = tempGrid;
+
+            sources.Add(farAwayTiles[collectorSpawn]);
+            CreateDijkstraMap(sources);
+
+
+            List<GameObject> collectList = new List<GameObject>();
+
+            while (farAwayTiles.Count > 0)
+            {
+                int collectable = AllocateSpot(farAwayTiles);
+                var collect = Instantiate(timerPrefab, new Vector3(farAwayTiles[collectable].xCoord, farAwayTiles[collectable].yCoord, 0), Quaternion.identity);
+                collect.transform.parent = objectParent.transform;
+
+                collectList.Add(collect);
+
+                sources.Add(farAwayTiles[collectable]);
+                CreateDijkstraMap(sources);
+            }
+
+            collector.GetComponent<CollectorAI>().FindObjects(collectList);
+            collector.GetComponent<CollectorAI>().SetTarget();
+        }
     }
 
     private int AllocateSpot(List<TileCoordinate> viableTiles)
@@ -712,6 +740,41 @@ public class GenerateMap : MonoBehaviour
                 {
                     var tile = Instantiate(floorPrefab, new Vector3(i, j, 0), Quaternion.identity);
                     tile.transform.parent = gameObject.transform;
+
+                    int store = grid[i, j].dijkstraDistance;
+
+                    if (store == 0)
+                    {
+                        tile.GetComponent<SpriteRenderer>().color = Color.white;
+                    }
+                    else if (store >= 1 && store <= 5)
+                    {
+                        tile.GetComponent<SpriteRenderer>().color = Color.red;
+                    }
+                    else if (store >= 6 && store <= 10)
+                    {
+                        tile.GetComponent<SpriteRenderer>().color = new Color(1.0f, 0.64f, 0.0f); //Orange
+                    }
+                    else if (store >= 11 && store <= 15)
+                    {
+                        tile.GetComponent<SpriteRenderer>().color = Color.yellow;
+                    }
+                    else if (store >= 16 && store <= 20)
+                    {
+                        tile.GetComponent<SpriteRenderer>().color = Color.green;
+                    }
+                    else if (store >= 21 && store <= 25)
+                    {
+                        tile.GetComponent<SpriteRenderer>().color = Color.blue;
+                    }
+                    else if (store >= 26 && store <= 30)
+                    {
+                        tile.GetComponent<SpriteRenderer>().color = Color.magenta;
+                    }
+                    else if (store >= 31)
+                    {
+                        tile.GetComponent<SpriteRenderer>().color = Color.grey;
+                    }
                 }
                 else if (grid[i, j].floor == false)
                 {
@@ -722,34 +785,93 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
-    private List<TileCoordinate> FindDistanceBetweenAllTiles(TileCoordinate startTile, Island allTiles)
+    private void CreateDijkstraMap(List<TileCoordinate> sourceTiles)
     {
-        List<TileCoordinate> farTiles = new List<TileCoordinate>();
 
-        foreach (TileCoordinate tile in allTiles.tiles)
+        foreach (TileCoordinate tile in tempGrid)
         {
-            int distance = FindDistanceBetweenTiles(startTile, tile);
-
-            if (distance > threshold)
-            {
-                farTiles.Add(tile);
-            }
+            //Reset all distances and visited markers
+            tile.ResetDijkstra();
         }
 
-        return farTiles;
+        foreach (TileCoordinate source in sourceTiles)
+        {
+            farAwayTiles.Clear();
+            foreach (TileCoordinate tile in tempGrid)
+            {
+                //Reset all distances and visited markers
+                tile.ResetMarker();
+            }
+            tempGrid[source.xCoord, source.yCoord].dijkstraDistance = 0;
+            tempGrid[source.xCoord, source.yCoord].dijkstraVisited = true;
+            FillMapFromSource(tempGrid[source.xCoord, source.yCoord]);
+        }
     }
 
-    private int FindDistanceBetweenTiles(TileCoordinate startTile, TileCoordinate endTile)
+    private void FillMapFromSource(TileCoordinate source)
     {
-        List<TileCoordinate> tempPath = new List<TileCoordinate>();
-        tempPath = pf.TilePath(tempGrid, startTile, endTile);
+        List<TileCoordinate> openList = new List<TileCoordinate>();
+        openList.Add(source);
 
-        if (tempPath == null)
+        while (openList.Count > 0)
         {
-            return int.MaxValue;
-        }
+            TileCoordinate currentTile = openList[0];
+            openList.Remove(openList[0]);
 
-        return tempPath.Last().fCost / 10;
+            foreach (TileCoordinate neighbour in GetListOfNeighbours(currentTile))
+            {
+                //If tile has already been in openList previously, do not check
+                if (neighbour.dijkstraVisited)
+                {
+                    continue;
+                }
+                else
+                {
+                    if (neighbour.dijkstraDistance > currentTile.dijkstraDistance + 1)
+                    {
+                        neighbour.dijkstraDistance = currentTile.dijkstraDistance + 1;
+                    }
+
+                    neighbour.dijkstraVisited = true;
+
+                    if (neighbour.dijkstraDistance >= threshold)
+                    {
+                        farAwayTiles.Add(neighbour);
+                    }
+
+                    openList.Add(neighbour);
+                }
+            }
+        }
+    }
+
+    private List<TileCoordinate> GetListOfNeighbours(TileCoordinate currentTile)
+    {
+        List<TileCoordinate> neighbours = new List<TileCoordinate>();
+
+        int x = currentTile.xCoord;
+        int y = currentTile.yCoord;
+
+        //Find cardinal neighbours only
+
+        for (int i = x - 1; i <= x + 1; i++)
+        {
+            for (int j = y - 1; j <= y + 1; j++)
+            {
+                if (checkMapBoundary(i, j) && tempGrid[i, j].floor == true)
+                {
+                    //Only treat cardinal directions as neighbours
+                    if (i == x || j == y)
+                    {
+                        if (!(i == x && j == y))
+                        {
+                            neighbours.Add(tempGrid[i, j]); //Add neighbour to list
+                        }
+                    }
+                }
+            }
+        }
+        return neighbours;
     }
 
     private void DestroyChildren()

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class timerCollectable : MonoBehaviour
+public class TimerCollectable : MonoBehaviour
 {
 
     [SerializeField] private int timeGain = 20;
@@ -25,6 +25,11 @@ public class timerCollectable : MonoBehaviour
             //Delete self
             Object.Destroy(this.gameObject);
         }
+    }
 
+    public void EnemyCollect()
+    {
+        //Delete self
+        Object.Destroy(this.gameObject);
     }
 }

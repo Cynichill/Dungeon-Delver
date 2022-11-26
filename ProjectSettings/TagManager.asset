@@ -13,6 +13,8 @@ TagManager:
   - ScoreUI
   - ObjParent
   - Generation
+  - hpui
+  - Collector
   layers:
   - Default
   - TransparentFX

@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour, IDataPersistence
     public float saveTime = 30f;
     private DataPersistenceManager dataManager;
     public bool debugOn = false;
+    public int hp = 3;
 
     //Don't destroy this object on load, makes sure duplicates do not appear by deleting them if the object already exists elsewhere
     private void Start()
@@ -38,6 +39,15 @@ public class GameManager : MonoBehaviour, IDataPersistence
         dataManager.SaveGame();
 
         //SceneManager.LoadScene(0);
+    }
+
+    public void ChangeHealth(int changeBy)
+    {
+        hp -= changeBy;
+        if(hp <= 0)
+        { 
+            EndGame();
+        }
     }
 
     public void LoadData(GameData data)
