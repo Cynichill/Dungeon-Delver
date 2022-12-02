@@ -15,6 +15,7 @@ TagManager:
   - Generation
   - hpui
   - Collector
+  - OptionsManager
   layers:
   - Default
   - TransparentFX

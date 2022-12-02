@@ -22,6 +22,8 @@ public class TimerCollectable : MonoBehaviour
             //Add time
             timer.currentTime += timeGain;
 
+            FindObjectOfType<AudioManager>().Play("AddTime");
+
             //Delete self
             Object.Destroy(this.gameObject);
         }

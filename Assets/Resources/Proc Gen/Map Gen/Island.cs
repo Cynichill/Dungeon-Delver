@@ -26,9 +26,12 @@ public class Island
                 {
                     if (x == tile.xCoord || y == tile.yCoord) //Check ONLY cardinals
                     {
-                        if (grid[x, y].floor == false) //If wall is found
+                        if (grid[x, y] != null)
                         {
-                            edgeTiles.Add(tile); //Add to edge tile list
+                            if (grid[x, y].floor == false) //If wall is found
+                            {
+                                edgeTiles.Add(tile); //Add to edge tile list
+                            }
                         }
                     }
                 }

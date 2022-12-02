@@ -38,7 +38,9 @@ public class GameManager : MonoBehaviour, IDataPersistence
         //Save game, return to title
         dataManager.SaveGame();
 
-        //SceneManager.LoadScene(0);
+        hp = 3;
+
+        SceneManager.LoadScene(0);
     }
 
     public void ChangeHealth(int changeBy)

@@ -19,12 +19,14 @@ public class ChaserAI : MonoBehaviour
 
         if (playerPosStore != player.position && canChange)
         {
-            SetTarget(player.position);
+            SetTarget(player.position); 
         }
 
         if (positions.Count != 0)
         {
             Vector3 nextTarget = positions[index];
+
+            //Move AI towards target by moving towards first square on path
             if (Vector3.Distance(transform.position, nextTarget) > 0.1f)
             {
                 Vector3 moveDirection = (nextTarget - transform.position).normalized;
@@ -34,6 +36,7 @@ public class ChaserAI : MonoBehaviour
             {
                 index++;
 
+                //Allow AI to move to first tile before changing target
                 if (index > 1 && !canChange)
                 {
                     canChange = true;
@@ -58,9 +61,9 @@ public class ChaserAI : MonoBehaviour
     {
         canChange = false;
         index = 0;
-
         playerPosStore = player.transform.position;
 
+        //Use A* to find best path to target
         List<TileCoordinate> tempPath = new List<TileCoordinate>();
         tempPath = pf.TilePath(grid, grid[Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.y)], grid[Mathf.RoundToInt(Destination.x), Mathf.RoundToInt(Destination.y)]);
 

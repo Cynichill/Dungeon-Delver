@@ -11,7 +11,7 @@ public class GenerateMap : MonoBehaviour
     //Control
     public PlayerControl controls;
     public bool debugControl;
-    public bool testingDLA;
+    public bool usingDLA;
 
     //Map Size
     private int mapSizeX = 0;
@@ -63,7 +63,7 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
-    public void GenerateDungeon(TileCoordinate[,] grid, int count, int mapSizeXParam, int mapSizeYParam)
+    public void GenerateDungeon(TileCoordinate[,] grid, int count, int mapSizeXParam, int mapSizeYParam, int ranGen)
     {
         mapSizeX = mapSizeXParam;
         mapSizeY = mapSizeYParam;
@@ -71,18 +71,37 @@ public class GenerateMap : MonoBehaviour
 
         pf.GetGridSize(mapSizeX, mapSizeY);
 
-        if (!debugControl)
+        switch (ranGen)
         {
-            if (testingDLA)
-            {
+            case 0: //CA
+                usingDLA = true;
+                ApplyCellularAutomata(tempGrid, count); //Apply CA to noise map or DLA
+                FloodFill(); //Use floodfill to fill and remove areas of the map
+                ConnectAllIslands(); //Connect all islands 
+                PlaceObjects(leftoverIslands.First());//This will be the final map, place player and exit somewhere
+                SpawnGrid(tempGrid); //Spawn dungeon
+                break;
+            case 1: //DLA only
+                usingDLA = false;
                 ApplyDiffusionLimitedAggregation(); //Apply DLA
-            }
-            ApplyCellularAutomata(tempGrid, count); //Apply CA to noise map or DLA
-            FloodFill(); //Use floodfill to fill and remove areas of the map
-            ConnectAllIslands(); //Connect all islands 
-            PlaceObjects(leftoverIslands.First());//This will be the final map, place player and exit somewhere
-            SpawnGrid(tempGrid); //Spawn dungeon
+                FloodFill(); //Use floodfill to fill and remove areas of the map
+                //ConnectAllIslands(); //Connect all islands 
+                PlaceObjects(leftoverIslands.First());//This will be the final map, place player and exit somewhere
+                SpawnGrid(tempGrid); //Spawn dungeon
+                break;
+            case 2: //CA + DLA
+                usingDLA = false;
+                ApplyDiffusionLimitedAggregation(); //Apply DLA
+                usingDLA = true;
+                ApplyCellularAutomata(tempGrid, count); //Apply CA to noise map or DLA
+                usingDLA = false;
+                FloodFill(); //Use floodfill to fill and remove areas of the map
+                ConnectAllIslands(); //Connect all islands 
+                PlaceObjects(leftoverIslands.First());//This will be the final map, place player and exit somewhere
+                SpawnGrid(tempGrid); //Spawn dungeon
+                break;
         }
+
     }
 
     private void SpawnGridNow()
@@ -139,7 +158,7 @@ public class GenerateMap : MonoBehaviour
                         for (int y = k - 1; y <= k + 1; y++)
                         {
                             //If cell exists outside map, count it as a wall
-                            if (checkMapBoundary(x, y))
+                            if (checkMapBoundary(x, y, true))
                             {
                                 //Do not add the current cell to the count
                                 if (x != j || y != k)
@@ -187,7 +206,7 @@ public class GenerateMap : MonoBehaviour
         {
             for (int y = mapSizeY / 2 - 1; y <= mapSizeY / 2 + 1; y++)
             {
-                if (checkMapBoundary(x, y))
+                if (checkMapBoundary(x, y, false))
                 {
                     tempGrid[x, y].floor = true;
                 }
@@ -257,7 +276,7 @@ public class GenerateMap : MonoBehaviour
                 i++;
 
                 //If new tile is in range..
-                if (checkMapBoundary(x, y))
+                if (checkMapBoundary(x, y, false))
                 {
                     foreach (TileCoordinate tile in dugTiles)
                     {
@@ -295,12 +314,23 @@ public class GenerateMap : MonoBehaviour
 
     }
 
-    private bool checkMapBoundary(int x, int y)
+    private bool checkMapBoundary(int x, int y, bool CADLA)
     {
-        //If cell exists over or under the boundaries of the map
-        if (x >= mapSizeX || y >= mapSizeY || x < 0 || y < 0)
+        if (CADLA)
         {
-            return false;
+            //If cell exists over or under the boundaries of the map
+            if (x >= mapSizeX || y >= mapSizeY || x < 0 || y < 0)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            //If cell exists over or under the boundaries of the map
+            if (x >= mapSizeX - 5 || y >= mapSizeY - 5 || x <= 5 || y <= 5)
+            {
+                return false;
+            }
         }
 
         //If all checks pass, return true
@@ -353,7 +383,7 @@ public class GenerateMap : MonoBehaviour
             {
                 for (int y = tile.yCoord - 1; y <= tile.yCoord + 1; y++)
                 {
-                    if (checkMapBoundary(x, y) && (x == tile.xCoord || y == tile.yCoord)) //If tile is adjacent and in bounds..
+                    if (checkMapBoundary(x, y, usingDLA) && (x == tile.xCoord || y == tile.yCoord)) //If tile is adjacent and in bounds..
                     {
                         if (tileFlags[x, y] == 0 && tempGrid[x, y].floor == tileType)
                         {
@@ -597,7 +627,7 @@ public class GenerateMap : MonoBehaviour
                 //If X coord ^2 + Y coord ^2 <= Radius ^2..
                 if ((int)Mathf.Pow(i, 2) + (int)Mathf.Pow(j, 2) <= (int)Mathf.Pow(radius, 2))
                 {
-                    if (checkMapBoundary(coord.xCoord + i, coord.yCoord + j)) //Check if proposed value is within map boundary
+                    if (checkMapBoundary(coord.xCoord + i, coord.yCoord + j, usingDLA)) //Check if proposed value is within map boundary
                     {
                         tempGrid[coord.xCoord + i, coord.yCoord + j].floor = true; //Create line
                     }
@@ -611,14 +641,32 @@ public class GenerateMap : MonoBehaviour
 
         List<TileCoordinate> sources = new List<TileCoordinate>();
 
-        int playerSpawn = AllocateSpot(viableTiles.tiles);
+        int playerSpawn = 0;
 
-        //Place player on random viable tile
-        player.transform.position = new Vector3(viableTiles.tiles[playerSpawn].xCoord, viableTiles.tiles[playerSpawn].yCoord, 0);
+        if (viableTiles != null)
+        {
+            if (viableTiles.tiles.Count > 0)
+            {
+                playerSpawn = AllocateSpot(viableTiles.tiles);
 
-        sources.Add(viableTiles.tiles[playerSpawn]);
+                //Place player on random viable tile
+                player.transform.position = new Vector3(viableTiles.tiles[playerSpawn].xCoord, viableTiles.tiles[playerSpawn].yCoord, 0);
 
-        CreateDijkstraMap(sources);
+                sources.Add(viableTiles.tiles[playerSpawn]);
+
+                CreateDijkstraMap(sources);
+            }
+            else
+            {
+                //Bad generation, can't place exit
+                gm.RestartScene(false);
+            }
+        }
+        else
+        {
+            //Bad generation, can't place exit
+            gm.RestartScene(false);
+        }
 
         if (farAwayTiles.Count == 0)
         {
@@ -639,46 +687,60 @@ public class GenerateMap : MonoBehaviour
         {
 
             int enemySpawn = AllocateSpot(farAwayTiles);
+            if (enemySpawn != int.MaxValue)
+            {
+                var chaser = Instantiate(chaserPrefab, new Vector3(farAwayTiles[enemySpawn].xCoord, farAwayTiles[enemySpawn].yCoord, 0), Quaternion.identity);
+                chaser.transform.parent = objectParent.transform;
+                chaser.GetComponent<ChaserAI>().grid = tempGrid;
+                chaser.GetComponent<ChaserAI>().FindObjects();
+                chaser.GetComponent<ChaserAI>().SetTarget(player.transform.position);
 
-            var chaser = Instantiate(chaserPrefab, new Vector3(farAwayTiles[enemySpawn].xCoord, farAwayTiles[enemySpawn].yCoord, 0), Quaternion.identity);
-            chaser.transform.parent = objectParent.transform;
-            chaser.GetComponent<ChaserAI>().grid = tempGrid;
-            chaser.GetComponent<ChaserAI>().FindObjects();
-            chaser.GetComponent<ChaserAI>().SetTarget(player.transform.position);
-
-            sources.Add(farAwayTiles[enemySpawn]);
-            CreateDijkstraMap(sources);
-
+                sources.Add(farAwayTiles[enemySpawn]);
+                CreateDijkstraMap(sources);
+            }
         }
 
         if (farAwayTiles.Count > 0)
         {
             int collectorSpawn = AllocateSpot(farAwayTiles);
 
-            var collector = Instantiate(collectorPrefab, new Vector3(farAwayTiles[collectorSpawn].xCoord, farAwayTiles[collectorSpawn].yCoord, 0), Quaternion.identity);
-            collector.transform.parent = objectParent.transform;
-            collector.GetComponent<CollectorAI>().grid = tempGrid;
-
-            sources.Add(farAwayTiles[collectorSpawn]);
-            CreateDijkstraMap(sources);
-
-
-            List<GameObject> collectList = new List<GameObject>();
-
-            while (farAwayTiles.Count > 0)
+            if (collectorSpawn != int.MaxValue)
             {
-                int collectable = AllocateSpot(farAwayTiles);
-                var collect = Instantiate(timerPrefab, new Vector3(farAwayTiles[collectable].xCoord, farAwayTiles[collectable].yCoord, 0), Quaternion.identity);
-                collect.transform.parent = objectParent.transform;
+                var collector = Instantiate(collectorPrefab, new Vector3(farAwayTiles[collectorSpawn].xCoord, farAwayTiles[collectorSpawn].yCoord, 0), Quaternion.identity);
+                collector.transform.parent = objectParent.transform;
+                collector.GetComponent<CollectorAI>().grid = tempGrid;
 
-                collectList.Add(collect);
-
-                sources.Add(farAwayTiles[collectable]);
+                sources.Add(farAwayTiles[collectorSpawn]);
                 CreateDijkstraMap(sources);
-            }
 
-            collector.GetComponent<CollectorAI>().FindObjects(collectList);
-            collector.GetComponent<CollectorAI>().SetTarget();
+                List<GameObject> collectList = new List<GameObject>();
+
+                for (int maxCollect = 0; maxCollect < 5; maxCollect++)
+                {
+                    if (farAwayTiles.Count > 0)
+                    {
+                        int collectable = AllocateSpot(farAwayTiles);
+
+                        if (collectable != int.MaxValue)
+                        {
+                            var collect = Instantiate(timerPrefab, new Vector3(farAwayTiles[collectable].xCoord, farAwayTiles[collectable].yCoord, 0), Quaternion.identity);
+                            collect.transform.parent = objectParent.transform;
+
+                            collectList.Add(collect);
+
+                            sources.Add(farAwayTiles[collectable]);
+                            CreateDijkstraMap(sources);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                collector.GetComponent<CollectorAI>().FindObjects(collectList);
+                collector.GetComponent<CollectorAI>().SetTarget();
+            }
         }
     }
 
@@ -705,7 +767,7 @@ public class GenerateMap : MonoBehaviour
             if (limitBreak == limit)
             {
                 Debug.Log("All spots used! (Uh oh!)");
-                return 99999;
+                return int.MaxValue;
             }
         }
 
@@ -834,7 +896,7 @@ public class GenerateMap : MonoBehaviour
 
                     neighbour.dijkstraVisited = true;
 
-                    if (neighbour.dijkstraDistance >= threshold)
+                    if (neighbour.dijkstraDistance > threshold)
                     {
                         farAwayTiles.Add(neighbour);
                     }
@@ -858,7 +920,7 @@ public class GenerateMap : MonoBehaviour
         {
             for (int j = y - 1; j <= y + 1; j++)
             {
-                if (checkMapBoundary(i, j) && tempGrid[i, j].floor == true)
+                if (checkMapBoundary(i, j, usingDLA) && tempGrid[i, j].floor == true)
                 {
                     //Only treat cardinal directions as neighbours
                     if (i == x || j == y)

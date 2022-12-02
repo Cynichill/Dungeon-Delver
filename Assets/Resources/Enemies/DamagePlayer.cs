@@ -12,6 +12,7 @@ public class DamagePlayer : MonoBehaviour
         if (player != null)
         {
             player.DamagePlayer(damage);
+            FindObjectOfType<AudioManager>().Play("PlayerHurt");
         }
     }
 }

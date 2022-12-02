@@ -31,7 +31,7 @@ public class Staircase : MonoBehaviour
             //Save current time to gm
             gm.saveTime = timer.currentTime;
 
-            //Save player info
+            FindObjectOfType<AudioManager>().Play("NextFloor");
 
             //Reload scene and generate new floor
             gm.RestartScene(false);

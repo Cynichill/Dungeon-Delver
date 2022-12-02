@@ -17,16 +17,31 @@ public class NoiseMapGenerator : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControl();
-        controls.Debug.DLANM.performed += ctx => GenerateNoiseGrid(true);
+        controls.Debug.DLANM.performed += ctx => GenerateNoiseGrid(true, 1);
     }
 
     private void Start()
     {
         genMap = GetComponent<GenerateMap>();
-        GenerateNoiseGrid(false);
+
+        System.Random randomSeed = new System.Random(Time.time.ToString().GetHashCode());
+        int ranGen = randomSeed.Next(0, 0);
+
+        switch (ranGen)
+        {
+            case 0:
+                GenerateNoiseGrid(false, ranGen);
+                break;
+            case 1:
+                GenerateNoiseGrid(true, ranGen);
+                break;
+            case 2:
+                GenerateNoiseGrid(true, ranGen);
+                break;
+        }
     }
 
-    private void GenerateNoiseGrid(bool DLA)
+    private void GenerateNoiseGrid(bool DLA, int type)
     {
         //Randomly select grid size
         mapSizeX = Random.Range(minMapBoundaries, maxMapBoundaries);
@@ -81,7 +96,7 @@ public class NoiseMapGenerator : MonoBehaviour
             }
         }
 
-        genMap.GenerateDungeon(grid, iterations, mapSizeX, mapSizeY);
+        genMap.GenerateDungeon(grid, iterations, mapSizeX, mapSizeY, type);
     }
 
     private void OnEnable()
